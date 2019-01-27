@@ -16,7 +16,8 @@
     "moment-timezone": "^0.5.23",
     "ping": "^0.2.2",
     "slack-node": "^0.1.8",
-    "winston": "^3.1.0"
+    "winston": "^3.1.0",
+    "unofficial-nest-api": "^0.1.4"
   },
   "scripts": {
     "start": "node server.js"
