@@ -16,3 +16,5 @@ Recommended to run with PM2 to load on boot and keep alive.
 Log files will capture events as well with a timestamp in the specified timezone.  Slack messages will send based on level set in config file.
 
 Geofence presence detect uses ifttt.com's 'Alert when you enter an area.' to update cell in a Google Sheet.  Sheet must be published as public as a single sheet as a CSV with the URL specified in the config file.  Headers should be "Status" and "Name" and values should be "Home" or "Away" for status and name should match the name in the config file people array.
+
+Nest can be turned on by supplying username and password - will set to away/home based on presence.

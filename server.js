@@ -3,6 +3,7 @@ const Person = require('./person.js');
 const SlackMessenger = require('./slack.js');
 const nap = require('./nodealarmproxy.js');
 const config = require("./config.js");
+const nest = require('unofficial-nest-api');
 
 const { createLogger, format, transports } = require('winston');
 const { combine, timestamp, label, printf } = format;
@@ -26,6 +27,21 @@ const logger = createLogger({
   ]
 });
 
+var nestIsReady = false;
+if (config.nest.toggleAwayWithPresence) {
+    nest.login(config.nest.username, config.nest.password, function (err, data) {
+        if (err) {
+            logger.error("Nest login failed.");
+            logger.error(err.message);
+            slack.send("Nest login failed.");
+            nestIsReady = false;
+        } else {
+            logger.info("Log in to Nest success.");
+            slack.send("Nest login success.");
+            nestIsReady = true;
+        }
+    });
+}
 
 var slack = new SlackMessenger(config.slackWebhook);
 var ppl = [];
@@ -42,9 +58,28 @@ for (var p in config.people) {
 	ppl.push(x);
 }
 
-var presence = new Presence(ppl, config.refresh, config.googleSheet)
+var presence = new Presence(ppl, config.refresh, config.googleSheet);
+presence.on('SomeoneHome', function(isHome, p) {
+    if (isHome) {
+        if (nestIsReady) {
+            nest.setAway(false);
+            logger.info("Nest set to Home");
+            if (config.slackMessageLevel>1)slack.send("Nest set to Home");
+        }
+    } else {
+        if (nestIsReady) {
+            nest.setAway(true);
+            logger.info("Nest set to Away");
+            if (config.slackMessageLevel>1)slack.send("Nest set to Away");
+        }
+    }
+    if (config.slackMessageLevel>1) slack.send((isHome?"Someone is home.":"Everyone gone."));
+    logger.info((isHome?"Someone is home.":"Everyone gone."));
+});
+
 logger.info("Security Server Watch Started.");
 slack.send("Security Server Watch Started.");
+
 var alarm = nap.initConfig({ password:config.password, //replace config.* with appropriate items
         serverpassword:config.serverpassword,
         actualhost:config.host,
@@ -59,7 +94,6 @@ var alarm = nap.initConfig({ password:config.password, //replace config.* with a
 
 var watchevents = ['609','610'];
 var zone_labels = config.zoneLabels;
-
 alarm.on('zoneupdate', function(data) {
         if (watchevents.indexOf(data.code) != -1) {
                 var msg = zone_labels[data.zone] + " is " + (data.code==609?'open. ':'closed. ');

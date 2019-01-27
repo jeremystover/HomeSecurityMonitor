@@ -1,11 +1,12 @@
 var BTWatch = require('btwatch');
 const getCSV = require('get-csv');
 const ping = require('ping');
-const Person = require('./person.js');
+const EventEmitter = require('events').EventEmitter;
 
-module.exports = class Presence   {
+module.exports = class Presence extends EventEmitter  {
 
     constructor (people, refreshSeconds, csvSheet) {
+        super();
         console.log("Initializing presence.");
         var _this = this;
         this.refresh = (refreshSeconds?refreshSeconds:600); //default 10 minutes
@@ -43,6 +44,8 @@ module.exports = class Presence   {
 
     checkHome(){
         //if (! _this) return;
+        var cState = this.isSomeoneHome();
+
         console.log("Checking for updates.");
         //set the fence value
         getCSV(this.googleSheet + '&r=' + getInt(), {headers: true})
@@ -73,6 +76,10 @@ module.exports = class Presence   {
                     _this.people[p].isHome();
                 }
             });
+        }
+        if (this.isSomeoneHome()!=cState) {
+            //there was a change, emit an event
+            this.emit('SomeoneHome', this.isSomeoneHome(), this);
         }
     }
 }
