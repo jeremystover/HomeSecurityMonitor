@@ -3,6 +3,7 @@ exports.serverpassword=''; //Password you want for proxy server
 exports.host = '';  //Envisalink host IP Address
 exports.port = 4025;
 exports.zoneLabels = ['','','']; //from dsc panel - leave first element array empty - zone 1 goes next, zone 2, etc.
+exports.ignoreZones = [1,2]; //matches index from zoneLabels - ignores on info messages, will still log and send on alert/alarm if no one is home.
 exports.tz = 'America/Los_Angeles';
 exports.people = [ //array of arrays with each representing a person to track.  IP is static assigned IP when on same wifi, mac address of device for bluetooth
     ['jeremy', '1.1.1.25', 'EE:EE:EE:EE:EE:EE']

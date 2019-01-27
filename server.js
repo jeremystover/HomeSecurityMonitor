@@ -67,7 +67,7 @@ alarm.on('zoneupdate', function(data) {
 				logger.info(msg);
 
                 if (presence.isSomeoneHome()) { //skip it - no need to alert
-                    if (config.slackMessageLevel > 1) slack.send(msg); //for now to test it.
+                    if (config.slackMessageLevel > 1 && !config.ignoreZones.includes(data.zone)) slack.send(msg); //for now to test it.
 				} else { //no one is home, but a door opened...
                     if (config.slackMessageLevel > 0) slack.send("ALERT: NO ONE HOME.  DOOR OPENED.  " + msg);
 				}
