@@ -58,7 +58,7 @@ for (var p in config.people) {
 	ppl.push(x);
 }
 
-var presence = new Presence(ppl, config.refresh, config.googleSheet);
+var presence = new Presence(ppl, config.refresh, config.googleSheet, config.pingMisses);
 presence.on('SomeoneHome', function(isHome, p) {
     if (isHome) {
         if (nestIsReady) {
@@ -97,7 +97,7 @@ var zone_labels = config.zoneLabels;
 alarm.on('zoneupdate', function(data) {
         if (watchevents.indexOf(data.code) != -1) {
                 var msg = zone_labels[data.zone] + " is " + (data.code==609?'open. ':'closed. ');
-                for (var p in presence.people) msg = msg + presence.people[p].name + ' is ' + (presence.people[p].isHome()?'home. ':'away. ');
+                for (var p in presence.people) msg = msg + presence.people[p].name + ' is ' + (presence.people[p].isHome()?'home. ':'away. ') + "(" + presence.people[p].ping.home + "; " + presence.people[p].bluetooth.home + ")";
 				logger.info(msg);
 
                 if (presence.isSomeoneHome()) { //skip it - no need to alert

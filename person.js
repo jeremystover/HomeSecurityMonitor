@@ -10,8 +10,7 @@ module.exports = class Person extends EventEmitter {
         this.mac = mac;
         this.lastChange = new Date();
         this.fence = {'home': false, 'lastChange': new Date()};
-        this.ping = {'home': false, 'lastChange': new Date()};
-        this.bluetooth = {'home': false, 'lastChange': new Date()};
+        this.ping = {'home': false, 'lastChange': new Date(), "missedCount":0};
         this._currentValue = false;
         this.refresh = refresh;
 
@@ -32,10 +31,6 @@ module.exports = class Person extends EventEmitter {
                 // if we have a recent ping that's probably a safe bet for home, but not a safe bet for away
                 newValue = true;
                 newLastChange = this.ping.lastChange;
-            } else if (this.bluetooth.home && this.bluetooth.lastChange > (Date() - this.refresh * 1000)) {
-                // if we have a recent bluetooth ping that's also a safe bet
-                newValue = true;
-                newLastChange = this.bluetooth.lastChange;
             } else if (this.fence.lastChange > (Date() - this.refresh * 3 * 1000)) {
                 //if we have a relatively recently (3xrecent) fence come/go, that's probably a safe bet
                 newValue = this.fence.home;

@@ -1,16 +1,16 @@
-var BTWatch = require('btwatch');
 const getCSV = require('get-csv');
-const ping = require('ping');
+const arpScanner = require('arpscan');
 const EventEmitter = require('events').EventEmitter;
 
 module.exports = class Presence extends EventEmitter  {
 
-    constructor (people, refreshSeconds, csvSheet) {
+    constructor (people, refreshSeconds, csvSheet, pingMisses) {
         super();
         console.log("Initializing presence.");
         var _this = this;
         this.refresh = (refreshSeconds?refreshSeconds:600); //default 10 minutes
         this.people = people;
+        this.pingMisses = pingMisses;
 
         this.isSomeoneHome = function() {
             var r = false;
@@ -18,20 +18,6 @@ module.exports = class Presence extends EventEmitter  {
             return r;
         }
         this.googleSheet = csvSheet;
-        //set the bluetooth value
-        for (var p in this.people) BTWatch.watch(this.people[p].mac);
-
-
-        BTWatch.on('change', function (inRange, macAddress) {
-            console.log("bt response:" + macAddress + ":" + inRange);
-            for (var p in _this.people) {
-                if ((inRange && macAddress==_this.people[p].mac && !_this.people[p].bluetooth.home) || (!inRange && macAddress==_this.people[p].mac && _this.people[p].bluetooth.home)) {
-                    _this.people[p].bluetooth.home = !_this.people[p].bluetooth.home;
-                    _this.people[p].bluetooth.lastChange = new Date();
-                    _this.people[p].isHome(); //emit event
-                }
-            }
-        });
 
         setInterval(function() {
             console.log("Checking presence B");
@@ -66,17 +52,33 @@ module.exports = class Presence extends EventEmitter  {
             }
         });
 
-        //set the ping value
-        for (var p in this.people) {
-            ping.promise.probe(this.people[p].host).then(function(isAlive){
-                console.log('got ' + _this.people[p].name + ' ping ' + isAlive.alive);
-                if ((isAlive.alive && !_this.people[p].ping.home) || (!isAlive.alive && _this.people[p].ping.home)) {
-                    _this.people[p].ping.home = !_this.people[p].ping.home;
-                    _this.people[p].ping.lastChange = new Date();
-                    _this.people[p].isHome();
+        arpScanner((function (err, data){
+            if(err) console.log("Error with ARP Scan." + err);
+
+            for (var p in this.people) {
+                var foundIp = false;
+                for (var d in data) {
+                    if (data[d].ip == this.people[p].host) {
+                        var emitEvent = !this.people[p].ping.home;
+                        this.people[p].ping.home = true;
+                        this.people[p].ping.lastChange = new Date();
+                        this.people[p].missedCount = 0;
+                        if (emitEvent) this.people[p].isHome();
+                        console.log("Ping Home. " + this.people[p].name);
+                    }
                 }
-            });
-        }
+                if (!foundIp) {
+                    this.people[p].missedCount = this.people[p].missedCount + 1;
+                    if (this.people[p].missedCount > this.pingMisses && this.people[p].ping.home) {
+                        this.people[p].ping.home = false;
+                        this.people[p].ping.lastChange = new Date();
+                        this.people[p].isHome();
+                        console.log("Ping Away. " + this.people[p].name);
+                    }
+                }
+            }
+        }).bind(this), {});
+
         if (this.isSomeoneHome()!=cState) {
             //there was a change, emit an event
             this.emit('SomeoneHome', this.isSomeoneHome(), this);
