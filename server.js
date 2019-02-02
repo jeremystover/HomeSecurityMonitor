@@ -113,6 +113,7 @@ var timer = new Timer(function () {
                 nestSetByTimer = true;
                 nestIsAway = true;
                 logger.info("Doors open. Setting Nest to Away.");
+                if (config.slackMessageLevel > 1) slack.send("Doors are open.  Setting Nest to Away.");
                 timer.reset(); //start timer to check again...
             }
             return;
@@ -121,6 +122,7 @@ var timer = new Timer(function () {
     if (nestIsReady && nestIsAway && nestSetByTimer) {
         nest.setAway(false);
         logger.info("Doors closed now. Setting Nest back to Home.");
+        if (config.slackMessageLevel > 1) slack.send("Doors are closed.  Setting Nest to Home.");
         nestSetByTimer = false;
         nestIsAway = false;
         timer.stop();
