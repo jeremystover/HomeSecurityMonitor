@@ -105,8 +105,8 @@ var watchevents = ['609','610'];
 
 var timer = new Timer(function () {
     //alarm.getCurrent();
-    for (var z in zones) {
-        if (zones[z].status == "open") {
+    for (var z in config.zones) {
+        if (config.zones[z].status == "open" && config.zones[z].openOffHeat) {
             //a zone is still open... turn off heat...
             if (nestIsReady && !nestIsAway) {
                 nest.setAway(true);
@@ -137,7 +137,7 @@ alarm.on('zoneupdate', function(data) {
 
                 for (var p in presence.people) msg = msg + presence.people[p].name + ' is ' + (presence.people[p].isHome()?'home. ':'away. ') + "(" + presence.people[p].ping.home + ")";
 				logger.info(msg);
-                timer.reset(); //open...
+                if (config.zones[data.zone].openOffHeat) timer.reset(); //open...
                 if (presence.isSomeoneHome()) { //skip it - no need to alert
                     if (config.slackMessageLevel > 1 && !config.zones[data.zone].ignore) slack.send(msg); //for now to test it.
 				} else { //no one is home, but a door opened...
