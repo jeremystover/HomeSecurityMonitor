@@ -28,6 +28,9 @@ const logger = createLogger({
 });
 
 var nestIsReady = false;
+var nestIsAway = false;
+var nestSetByTimer = false;
+
 if (config.nest.toggleAwayWithPresence) {
     nest.login(config.nest.username, config.nest.password, function (err, data) {
         if (err) {
@@ -63,12 +66,16 @@ presence.on('SomeoneHome', function(isHome, p) {
     if (isHome) {
         if (nestIsReady) {
             nest.setAway(false);
+            nestIsAway = false;
+            nestSetByTimer = false;
             logger.info("Nest set to Home");
             if (config.slackMessageLevel>1)slack.send("Nest set to Home");
         }
     } else {
         if (nestIsReady) {
             nest.setAway(true);
+            nestIsAway = true;
+            nestSetByTimer = false;
             logger.info("Nest set to Away");
             if (config.slackMessageLevel>1)slack.send("Nest set to Away");
         }
@@ -93,17 +100,74 @@ var alarm = nap.initConfig({ password:config.password, //replace config.* with a
 });
 
 var watchevents = ['609','610'];
-var zone_labels = config.zoneLabels;
+
+
+
+var timer = new Timer(function () {
+    //alarm.getCurrent();
+    for (var z in zones) {
+        if (zones[z].status == "open") {
+            //a zone is still open... turn off heat...
+            if (nestIsReady && !nestIsAway) {
+                nest.setAway(true);
+                nestSetByTimer = true;
+                nestIsAway = true;
+                logger.info("Doors open. Setting Nest to Away.");
+                timer.reset(); //start timer to check again...
+            }
+            return;
+        }
+    }
+    if (nestIsReady && nestIsAway && nestSetByTimer) {
+        nest.setAway(false);
+        logger.info("Doors closed now. Setting Nest back to Home.");
+        nestSetByTimer = false;
+        nestIsAway = false;
+        timer.stop();
+    }
+}, config.doorOpenSecondsForHeatOff);
+
 alarm.on('zoneupdate', function(data) {
         if (watchevents.indexOf(data.code) != -1) {
-                var msg = zone_labels[data.zone] + " is " + (data.code==609?'open. ':'closed. ');
-                for (var p in presence.people) msg = msg + presence.people[p].name + ' is ' + (presence.people[p].isHome()?'home. ':'away. ') + "(" + presence.people[p].ping.home + "; " + presence.people[p].bluetooth.home + ")";
-				logger.info(msg);
+                var msg = config.zones[data.zone].label + " is " + (data.code==609?'open. ':'closed. ');
 
+                config.zones[data.zone].status = (data.code==609?"open":"closed");
+
+                for (var p in presence.people) msg = msg + presence.people[p].name + ' is ' + (presence.people[p].isHome()?'home. ':'away. ') + "(" + presence.people[p].ping.home + ")";
+				logger.info(msg);
+                timer.reset(); //open...
                 if (presence.isSomeoneHome()) { //skip it - no need to alert
-                    if (config.slackMessageLevel > 1 && !config.ignoreZones.includes(data.zone)) slack.send(msg); //for now to test it.
+                    if (config.slackMessageLevel > 1 && !config.zones[data.zone].ignore) slack.send(msg); //for now to test it.
 				} else { //no one is home, but a door opened...
                     if (config.slackMessageLevel > 0) slack.send("ALERT: NO ONE HOME.  DOOR OPENED.  " + msg);
 				}
         }
 });
+
+
+function Timer(fn, t) {
+    var timerObj = setInterval(fn, t);
+
+    this.stop = function() {
+        if (timerObj) {
+            clearInterval(timerObj);
+            timerObj = null;
+        }
+        return this;
+    }
+
+    // start timer using current settings (if it's not already running)
+    this.start = function() {
+        if (!timerObj) {
+            this.stop();
+            timerObj = setInterval(fn, t);
+        }
+        return this;
+    }
+
+    // start with new interval, stop current interval
+    this.reset = function(newT) {
+        t = newT;
+        return this.stop().start();
+    }
+}

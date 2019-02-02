@@ -25,13 +25,13 @@ module.exports = class Person extends EventEmitter {
         this.isHome = function () {
 
             var newValue = false;
-            var newLastChange = Date();
+            var newLastChange = new Date();
 
-            if (this.ping.home && this.ping.lastChange > (Date() - this.refresh * 1000)) {
+            if (this.ping.home && this.ping.lastChange > (newLastChange - this.refresh * 1000)) {
                 // if we have a recent ping that's probably a safe bet for home, but not a safe bet for away
                 newValue = true;
                 newLastChange = this.ping.lastChange;
-            } else if (this.fence.lastChange > (Date() - this.refresh * 3 * 1000)) {
+            } else if (this.fence.lastChange > (newLastChange - this.refresh * 3 * 1000)) {
                 //if we have a relatively recently (3xrecent) fence come/go, that's probably a safe bet
                 newValue = this.fence.home;
                 newLastChange = this.fence.lastChange;

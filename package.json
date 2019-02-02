@@ -10,7 +10,6 @@
   },
   "main": "nodehome",
   "dependencies": {
-    "btwatch": "^1.1.0",
     "events": "^3.0.0",
     "get-csv": "^3.0.3",
     "moment-timezone": "^0.5.23",
