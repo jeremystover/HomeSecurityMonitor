@@ -65,7 +65,7 @@ var presence = new Presence(ppl, config.refresh, config.googleSheet, config.ping
 presence.on('SomeoneHome', function(isHome, p) {
     if (isHome) {
         if (nestIsReady) {
-            nest.setAway(false);
+            nest.setAway(false, config.nest.structure_id);
             nestIsAway = false;
             nestSetByTimer = false;
             logger.info("Nest set to Home");
@@ -73,7 +73,7 @@ presence.on('SomeoneHome', function(isHome, p) {
         }
     } else {
         if (nestIsReady) {
-            nest.setAway(true);
+            nest.setAway(true, config.nest.structure_id);
             nestIsAway = true;
             nestSetByTimer = false;
             logger.info("Nest set to Away");
@@ -109,7 +109,7 @@ var timer = new Timer(function () {
         if (config.zones[z].status == "open" && config.zones[z].openOffHeat) {
             //a zone is still open... turn off heat...
             if (nestIsReady && !nestIsAway) {
-                nest.setAway(true);
+                nest.setAway(true, config.nest.structure_id);
                 nestSetByTimer = true;
                 nestIsAway = true;
                 logger.info("Doors open. Setting Nest to Away.");
@@ -120,7 +120,7 @@ var timer = new Timer(function () {
         }
     }
     if (nestIsReady && nestIsAway && nestSetByTimer) {
-        nest.setAway(false);
+        nest.setAway(false, config.nest.structure_id);
         logger.info("Doors closed now. Setting Nest back to Home.");
         if (config.slackMessageLevel > 1) slack.send("Doors are closed.  Setting Nest to Home.");
         nestSetByTimer = false;

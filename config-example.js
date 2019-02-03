@@ -12,5 +12,5 @@ exports.slackWebhook = "https://hooks.slack.com/services/..."; //from Slack - se
 exports.logFileNames = {"zones":"zone.log","errors":"error.log"}; //names of log files
 exports.refresh = 600; //frequency to check whether people are home
 exports.slackMessageLevel = 2; //0 - none, 1 - alarm alerts when no one home but door open, 2 - all open/close and arrive/leave plus alerts
-exports.nest = {'toggleAwayWithPresence':false, 'username':'', 'password':''}; //toggle to false to not use or if no nest is present
+exports.nest = {'toggleAwayWithPresence':false, 'username':'', 'password':'', 'structure_id':''}; //toggle to false to not use or if no nest is present
 exports.pingMisses = 3;
